@@ -1,5 +1,9 @@
+// Matches 0-9
+const simpleDigitRegex = /\d/g;
+
 // Matches 0-9 or a textual representation of digits
-const digitRegex = /(?=(\d|one|two|three|four|five|six|seven|eight|nine))/g;
+// uses a (?=) lookahead to match overlaps like 'oneight'
+const textualDigitRegex = /(?=(\d|one|two|three|four|five|six|seven|eight|nine))/g;
 
 const intMap: Record<string, string> = {
   '0': '0',
@@ -24,11 +28,25 @@ const intMap: Record<string, string> = {
   nine: '9',
 };
 
+type ParseDigitsFromString = {
+  str: string;
+  processTextual?: boolean;
+};
+
 /**
- * Gets all digits (see regex above) from a string as a string array.
- * Takes into account 'overlapping' text representations
- * @example
- * 'dh13kjoneight0' // ['1', '3', '1', '8', '0']
+ * Gets all digits (0-9) from a string as a string array.
+ * If processTextual is `true`, also processes textual representations of digits and
+ * takes into account 'overlapping' text representations.
  */
-export const parseDigitsFromString = (str: string) =>
-  Array.from(str.matchAll(digitRegex), (x) => x[1]).map((it) => intMap[it]);
+export const parseDigitsFromString = ({ str, processTextual }: ParseDigitsFromString) => {
+  if (processTextual) {
+    const matches = str.matchAll(textualDigitRegex);
+    const matchArr = Array.from(matches, (x) => x[1]);
+    const mappedToDigits = matchArr.map((it) => intMap[it]);
+
+    return mappedToDigits;
+  } else {
+    const digits = str.match(simpleDigitRegex);
+    return digits;
+  }
+};

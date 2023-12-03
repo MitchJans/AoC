@@ -1,3 +1,4 @@
+import { parseDigitsFromString } from '@utils/parse-digits-from-string';
 import { readFileAsLines } from '@utils/read-file-as-lines';
 
 console.log('-- AOC 2023 - Day 1, part 1 --');
@@ -6,7 +7,7 @@ const entries = await readFileAsLines({ year: 2023, day: 1, parser: String });
 
 const digitRegex = /\d/g;
 const nums = entries.map((entry) => {
-  const digits = entry.match(digitRegex);
+  const digits = parseDigitsFromString(entry);
   if (!digits) {
     return 0;
   }

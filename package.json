@@ -1,21 +1,25 @@
 {
-  "name": "aoc-2020",
+  "name": "aoc-mitchjans",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@types/node": "^20.8.10",
-    "typescript": "^5.2.2"
+    "@types/node": "^24.10.1",
+    "chalk": "^5.6.2",
+    "dotenv": "^17.2.3",
+    "ramda": "^0.32.0",
+    "typescript": "^5.9.3"
   },
   "devDependencies": {
-    "bun-types": "^1.0.10",
-    "simple-git-hooks": "^2.9.0"
+    "@types/ramda": "^0.31.1",
+    "bun-types": "^1.3.3",
+    "simple-git-hooks": "^2.13.1",
+    "vitest": "^4.0.15"
   },
   "simple-git-hooks": {
     "preserveUnused": true,

@@ -1,0 +1,14 @@
+import * as R from 'ramda';
+
+const year = {YEAR};
+const day = {DAY};
+
+// problem: {PROBLEM_URL}
+
+const aoc{YEAR}_day{DAY}_part1 = async (input: string, ...params: any[]) => {
+	return "Not implemented";
+}
+
+const aoc{YEAR}_day{DAY}_part2 = async (input: string, ...params: any[]) => {
+	return "Not implemented";
+}

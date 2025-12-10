@@ -1,4 +1,4 @@
-import { stringToLines } from '@utils/input.utils';
+import { stringToLines } from '@utils/solution.utils';
 
 const year = 2025;
 const day = 1;

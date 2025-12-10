@@ -1,11 +1,11 @@
 import * as R from 'ramda';
 
 const year = 2025;
-const day = 5;
+const day = 10;
 
-// problem: https://adventofcode.com/2025/day/5
+// problem: https://adventofcode.com/2025/day/10
 
-const aoc2025_day5_part1 = async (input: string, ...params: any[]) => {
+const aoc2025_day10_part1 = async (input: string, ...params: any[]) => {
   const startTime = process.hrtime();	
   
 	const result = await "Not implemented";
@@ -16,7 +16,7 @@ const aoc2025_day5_part1 = async (input: string, ...params: any[]) => {
 	return result;
 }
 
-const aoc2025_day5_part2 = async (input: string, ...params: any[]) => {
+const aoc2025_day10_part2 = async (input: string, ...params: any[]) => {
   const startTime = process.hrtime();
   
 	const result = await "Not implemented";
@@ -30,6 +30,6 @@ const aoc2025_day5_part2 = async (input: string, ...params: any[]) => {
 export default {
 	year,
 	day,
-  part1: aoc2025_day5_part1,
-  part2: aoc2025_day5_part2,
+  part1: aoc2025_day10_part1,
+  part2: aoc2025_day10_part2,
 };

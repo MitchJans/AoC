@@ -1,6 +1,9 @@
 import path from 'path';
-import { fetch } from 'bun';
-import env from './env.ts';
+
+import chalk from 'chalk';
+import boxen from 'boxen';
+import { macchiato } from './utils/output_colors.ts';
+import { aocClient } from '@utils/aoc-client.ts';
 
 // Sets up challenges and inputs for missing days/years
 
@@ -30,13 +33,23 @@ const getDataPath = (year: string, day: string): string => {
   return path.join(cwd, 'years', year, paddedDay);
 };
 
+// Welcome banner
+const welcomeBanner = boxen(chalk.hex(macchiato.lavender).bold('🎄 Advent of Code Initializer 🎄'), {
+  padding: 1,
+  borderColor: macchiato.blue,
+  borderStyle: 'round',
+  textAlignment: 'center',
+});
+console.log(welcomeBanner);
+
 // Actually run this biz
 for (const year of years) {
   for (const day of days) {
+    const paddedDay = day.toString().padStart(2, '0');
     // Solution template replacements
     const replacements = {
       '{YEAR}': String(year),
-      '{DAY}': String(day),
+      '{DAY}': String(day), // this is a number var, so no need to pad
       '{PROBLEM_URL}': `https://adventofcode.com/${year}/day/${day}`,
     };
 
@@ -45,19 +58,38 @@ for (const year of years) {
       break; // stop if we've passed the current day, these challenges are not yet available
     }
     // The directory for the year and day
-    const dir = getDataPath(year.toString(), day.toString());
+    const dir = getDataPath(year.toString(), paddedDay);
+
+    // Header for this day
+    const dayHeader = boxen(chalk.hex(macchiato.blue).bold(`Year ${year} - Day ${paddedDay}`), {
+      padding: { top: 0, bottom: 0, left: 1, right: 1 },
+      borderColor: macchiato.blue,
+      borderStyle: 'round',
+    });
+    console.log(dayHeader);
 
     // Write the TS file to put the solution into
     const solutionTemplatePath = path.join(cwd, 'init_utils', 'skeleton.ts.dat');
     let templateContent = await Bun.file(solutionTemplatePath).text();
     const solutionFilePath = path.join(dir, 'index.ts'); // index is a stupid name, but it's the default entry point¯\_(ツ)_/¯
-    if (!(await Bun.file(solutionFilePath).exists())) {
+    const solutionExists = await Bun.file(solutionFilePath).exists();
+
+    if (!solutionExists) {
       for (const [key, value] of Object.entries(replacements)) {
-        console.log(`Replacing ${key} with ${value}`);
         templateContent = templateContent.replaceAll(key, value);
       }
-      console.log(templateContent);
       await Bun.file(solutionFilePath).write(templateContent);
+      console.log(
+        chalk.hex(macchiato.green)('✓') +
+          chalk.hex(macchiato.text)(' Skeleton generated: ') +
+          chalk.hex(macchiato.teal)(solutionFilePath),
+      );
+    } else {
+      console.log(
+        chalk.hex(macchiato.yellow)('○') +
+          chalk.hex(macchiato.text)(' Skeleton already exists: ') +
+          chalk.hex(macchiato.teal)(solutionFilePath),
+      );
     }
 
     // check if input file exists or is empty, if so fetch it from the AoC website
@@ -65,28 +97,37 @@ for (const year of years) {
     const inputFile = Bun.file(inputFilePath);
     const inputFileMissing = !(await inputFile.exists());
     const inputFileIsEmpty = !inputFileMissing && inputFile.size === 0;
+
     if (inputFileMissing || inputFileIsEmpty) {
-      console.log(`Input for ${year} day ${day} is missing or empty, fetching from AoC website...`);
-      const res = await fetch(`https://adventofcode.com/${year}/day/${day}/input`, {
-        headers: {
-          Cookie: `session=${env.aocSessionCookie}`,
-        },
-      });
+      console.log(chalk.hex(macchiato.peach)('⏳') + chalk.hex(macchiato.text)(' Fetching input...'));
+      const res = await aocClient(`${year}/day/${day}/input`);
       if (res.ok) {
-        console.log(`Fetched input for ${year} day ${day}`);
         await inputFile.write(await res.text());
-        console.log(`Wrote input for ${year} day ${day}`);
+        console.log(
+          chalk.hex(macchiato.green)('✓') +
+            chalk.hex(macchiato.text)(' Input fetched: ') +
+            chalk.hex(macchiato.teal)(inputFilePath),
+        );
       } else {
-        console.error(`Failed to fetch input for ${year} day ${day}`);
-        console.error(`Status: ${res.status}`);
-        console.error(`Status Text: ${res.statusText}`);
-        console.error(`Body: ${await res.text()}`);
-        console.error(`Headers: ${JSON.stringify(res.headers)}`);
-        console.error(`Quitting!`);
+        console.error(chalk.hex(macchiato.red).bold('✗ Failed to fetch input'));
+        console.error(chalk.hex(macchiato.red)(`Status: ${res.status} ${res.statusText}`));
+        console.error(chalk.hex(macchiato.red)(`Body: ${await res.text()}`));
         process.exit(1);
       }
     } else {
-      console.log(`Input for ${year} day ${day} already exists.`);
+      console.log(
+        chalk.hex(macchiato.yellow)('○') +
+          chalk.hex(macchiato.text)(' Input already exists: ') +
+          chalk.hex(macchiato.teal)(inputFilePath),
+      );
     }
+
+    // Check to see if we have the problem file, if not fetch it from the AoC website
+    const problemFilePath = path.join(dir, 'problem.html');
+    const problemFile = Bun.file(problemFilePath);
+    const problemFileMissing = !(await problemFile.exists());
+    const problemFileIsEmpty = !problemFileMissing && problemFile.size === 0;
+
+    console.log(''); // Empty line between days
   }
 }

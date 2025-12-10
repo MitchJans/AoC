@@ -12,3 +12,10 @@ const aoc{YEAR}_day{DAY}_part1 = async (input: string, ...params: any[]) => {
 const aoc{YEAR}_day{DAY}_part2 = async (input: string, ...params: any[]) => {
 	return "Not implemented";
 }
+
+export default {
+	year,
+	day,
+  part1: aoc{YEAR}_day{DAY}_part1,
+  part2: aoc{YEAR}_day{DAY}_part2,
+};

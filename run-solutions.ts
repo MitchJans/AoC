@@ -45,16 +45,25 @@ const run = async ({ args }: { args: { year?: string; day?: string; parts?: stri
     process.exit(1);
   }
 
+  // Helper to strip ANSI codes for measuring visual length
+  const stripAnsi = (str: string) => str.replace(/\u001b\[[0-9;]*m/g, '');
+
   // Iterate over years
   for (const year of years) {
     const yearLines: string[] = [year, ''];
+
+    // Collect all day results first for column alignment
+    type DayResult = {
+      day: string;
+      partResults: Array<{ rawText: string; styledText: string }>;
+    };
+    const dayResults: DayResult[] = [];
 
     // Iterate over days
     for (const day of days) {
       const paddedDay = day.padStart(2, '0');
       const solutionPath = path.join(process.cwd(), 'years', year, paddedDay, 'index.ts');
       const inputPath = path.join(process.cwd(), 'years', year, paddedDay, 'input.txt');
-      console.table({ year, day, paddedDay, solutionPath, inputPath });
 
       // Check if solution file exists
       const solutionFile = Bun.file(solutionPath);
@@ -97,31 +106,32 @@ const run = async ({ args }: { args: { year?: string; day?: string; parts?: stri
 
       // If in the future, show "Not yet available"
       if (isFuture) {
-        yearLines.push(`  Day ${paddedDay}`);
-        for (const part of parts) {
-          const notAvailableText =
-            chalk.hex(macchiato.text)(`Part ${part}: `) + chalk.hex(macchiato.mauve).bold('⏳...');
-          yearLines.push(`    ${notAvailableText}`);
-        }
-        yearLines.push('');
+        const partResults = parts.map((part) => ({
+          rawText: `Part ${part}: ⏳...`,
+          styledText: chalk.hex(macchiato.text)(`Part ${part}: `) + chalk.hex(macchiato.mauve).bold('⏳...'),
+        }));
+        dayResults.push({ day: paddedDay, partResults });
         continue;
       }
 
       if (!solutionExists) {
-        yearLines.push(`  Day ${paddedDay}`);
-        for (const part of parts) {
-          const skippedText =
-            chalk.hex(macchiato.text)(`Part ${part}: `) + chalk.hex(macchiato.mauve).bold('Solution file missing');
-          yearLines.push(`    ${skippedText}`);
-        }
-        yearLines.push('');
+        const partResults = parts.map((part) => ({
+          rawText: `Part ${part}: Solution file missing`,
+          styledText:
+            chalk.hex(macchiato.text)(`Part ${part}: `) + chalk.hex(macchiato.mauve).bold('Solution file missing'),
+        }));
+        dayResults.push({ day: paddedDay, partResults });
         continue;
       }
 
       if (!solution) {
-        yearLines.push(`  Day ${paddedDay}`);
-        yearLines.push(`    ✗ Solution module does not export a default object`);
-        yearLines.push('');
+        const partResults = [
+          {
+            rawText: '✗ Solution module does not export a default object',
+            styledText: '✗ Solution module does not export a default object',
+          },
+        ];
+        dayResults.push({ day: paddedDay, partResults });
         continue;
       }
 
@@ -129,13 +139,12 @@ const run = async ({ args }: { args: { year?: string; day?: string; parts?: stri
       const inputFile = Bun.file(inputPath);
       const inputExists = await inputFile.exists();
       if (!inputExists) {
-        yearLines.push(`  Day ${paddedDay}`);
-        for (const part of parts) {
-          const skippedText =
-            chalk.hex(macchiato.text)(`Part ${part}: `) + chalk.hex(macchiato.mauve).bold('Input file missing');
-          yearLines.push(`    ${skippedText}`);
-        }
-        yearLines.push('');
+        const partResults = parts.map((part) => ({
+          rawText: `Part ${part}: Input file missing`,
+          styledText:
+            chalk.hex(macchiato.text)(`Part ${part}: `) + chalk.hex(macchiato.mauve).bold('Input file missing'),
+        }));
+        dayResults.push({ day: paddedDay, partResults });
         continue;
       }
 
@@ -143,12 +152,16 @@ const run = async ({ args }: { args: { year?: string; day?: string; parts?: stri
       const input = await inputFile.text();
 
       // Run specified parts
+      const partResults: Array<{ rawText: string; styledText: string }> = [];
       for (const part of parts) {
         const partKey = `part${part}` as keyof typeof solution;
         const partFunction = solution[partKey];
 
         if (!partFunction || typeof partFunction !== 'function') {
-          yearLines.push(`    ✗ Part ${part} not found or is not a function`);
+          partResults.push({
+            rawText: `✗ Part ${part} not found or is not a function`,
+            styledText: `✗ Part ${part} not found or is not a function`,
+          });
           continue;
         }
 
@@ -156,14 +169,54 @@ const run = async ({ args }: { args: { year?: string; day?: string; parts?: stri
           const result = await partFunction(input);
           const isImplemented = String(result) !== 'Not implemented';
           const resultColor = isImplemented ? macchiato.green : macchiato.yellow;
-          const resultText = chalk.hex(macchiato.text)(`Part ${part}: `) + chalk.hex(resultColor).bold(String(result));
-          yearLines.push(`    ${resultText}`);
+          const rawText = `Part ${part}: ${String(result)}`;
+          const styledText = chalk.hex(macchiato.text)(`Part ${part}: `) + chalk.hex(resultColor).bold(String(result));
+          partResults.push({ rawText, styledText });
         } catch (error) {
-          yearLines.push(`    ✗ Error running part ${part}`);
+          partResults.push({
+            rawText: `✗ Error running part ${part}`,
+            styledText: `✗ Error running part ${part}`,
+          });
         }
       }
 
-      yearLines.push('');
+      dayResults.push({ day: paddedDay, partResults });
+    }
+
+    // Calculate column widths for alignment
+    // Find the maximum width of the first part (Part 1) across all days
+    const maxPart1Width = dayResults.reduce((max, dayResult) => {
+      if (dayResult.partResults.length > 0) {
+        const visualLength = stripAnsi(dayResult.partResults[0].rawText).length;
+        return visualLength > max ? visualLength : max;
+      }
+      return max;
+    }, 0);
+
+    // Format and add each day's results to yearLines with aligned columns
+    for (const dayResult of dayResults) {
+      if (dayResult.partResults.length === 0) {
+        continue;
+      }
+
+      // For single-part results (like error messages), just show them as-is
+      if (dayResult.partResults.length === 1) {
+        yearLines.push(`  Day ${dayResult.day}  ${dayResult.partResults[0].styledText}`);
+        continue;
+      }
+
+      // For multi-part results, align Part 2 based on Part 1's max width
+      const part1 = dayResult.partResults[0];
+      const part1VisualLength = stripAnsi(part1.rawText).length;
+      const padding = ' '.repeat(maxPart1Width - part1VisualLength);
+
+      // Build the line with aligned parts
+      const partsText =
+        part1.styledText +
+        padding +
+        (dayResult.partResults.length > 1 ? '  ' + dayResult.partResults[1].styledText : '');
+
+      yearLines.push(`  Day ${dayResult.day}  ${partsText}`);
     }
 
     // Remove trailing empty line if present

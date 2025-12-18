@@ -92,6 +92,30 @@ for (const year of years) {
       );
     }
 
+    // Write the spec file
+    const specTemplatePath = path.join(cwd, 'init_utils', 'skeleton.spec.ts.dat');
+    let specTemplateContent = await Bun.file(specTemplatePath).text();
+    const specFilePath = path.join(dir, `${year}.${paddedDay}.spec.ts`);
+    const specExists = await Bun.file(specFilePath).exists();
+
+    if (!specExists) {
+      for (const [key, value] of Object.entries(replacements)) {
+        specTemplateContent = specTemplateContent.replaceAll(key, value);
+      }
+      await Bun.file(specFilePath).write(specTemplateContent);
+      console.log(
+        chalk.hex(macchiato.green)('✓') +
+          chalk.hex(macchiato.text)(' Spec file generated: ') +
+          chalk.hex(macchiato.teal)(specFilePath),
+      );
+    } else {
+      console.log(
+        chalk.hex(macchiato.yellow)('○') +
+          chalk.hex(macchiato.text)(' Spec file already exists: ') +
+          chalk.hex(macchiato.teal)(specFilePath),
+      );
+    }
+
     // check if input file exists or is empty, if so fetch it from the AoC website
     const inputFilePath = path.join(dir, 'input.txt');
     const inputFile = Bun.file(inputFilePath);

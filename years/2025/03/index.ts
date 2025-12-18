@@ -10,47 +10,74 @@ function* charactersInString(str: string) {
   return;
 }
 
+// Finds the left-most occurrence of the highest digit in a string and returns the character and index
+const findHighestDigit = (str: string) => {
+  let highestChar = str[0];
+  let highestIdx = 0;
+
+  // start at 1 because we don't need to check the first character against itself
+  for (let i = 1; i < str.length; i++) {
+    const char = str[i];
+    const digit = parseInt(char);
+    if (digit > Number(highestChar)) {
+      highestIdx = i;
+      highestChar = char;
+    }
+    if (digit === 9) {
+      break;
+    }
+  }
+
+  return { char: highestChar, idx: highestIdx };
+};
+
+// fined the highest numerical string value that can be created by concatenating 2 digits from the input string, without rearranging the digits
 const aoc2025_day3_part1 = async (input: string, ...params: any[]) => {
+  // INITIAL SOLUTION
+  // const startTime = process.hrtime();
+
+  // const inputLines = input.split('\n');
+
+  // let result = 0;
+  // for (const line of inputLines) {
+  //   // Find highest from left (excluding last char)
+  //   const { char: leftChar, idx: leftIdx } = findHighestDigit(line.slice(0, -1));
+
+  //   // Find highest from right in remaining portion (reversed)
+  //   const restOfLine = line.slice(leftIdx + 1);
+  //   const reversedRest = restOfLine.split('').reverse().join('');
+  //   const { char: rightChar } = findHighestDigit(reversedRest);
+
+  //   console.table({ leftChar, rightChar });
+  //   const lineResult = Number(`${leftChar}${rightChar}`);
+  //   result += lineResult;
+  // }
+
+  // const endTime = process.hrtime(startTime);
+  // console.log(`Y${year} D${day} P1 Time taken: ${endTime[0]}s ${endTime[1] / 1000000}ms`);
+
+  // return result;
+
+  // REFACTORED SOLUTION, only iterates once per line
   const startTime = process.hrtime();
 
   const inputLines = input.split('\n');
 
   let result = 0;
   for (const line of inputLines) {
-    // init tracking vars
-    let leftHighestIdx = 0;
-    let leftChar = line[0];
-    // also start at zero because we will reverse the string for searching RTL
-    let rightHighestIdx = 0;
-    let rightChar = line[line.length - 1];
-
-    for (const { idx, char } of charactersInString(line.slice(0, -1))) {
-      const digit = parseInt(char);
-      if (digit > Number(leftChar)) {
-        leftHighestIdx = idx;
-        leftChar = char;
-      }
-      if (digit === 9) {
-        break;
+    let left = 0;
+    let right = 0;
+    for (let i = 0; i < line.length; i++) {
+      const current = +line[i];
+      if (current > left && i !== line.length - 1) {
+        left = current;
+        right = 0;
+      } else if (current > right) {
+        right = current;
       }
     }
 
-    const restOfLine = line.slice(leftHighestIdx + 1);
-    const reversedRestOfLine = restOfLine.split('').reverse().join('');
-    for (const { idx, char } of charactersInString(reversedRestOfLine)) {
-      const digit = parseInt(char);
-      if (digit > Number(rightChar)) {
-        rightHighestIdx = idx;
-        rightChar = char;
-      }
-      if (digit === 9) {
-        break;
-      }
-    }
-
-    console.table({ leftChar, rightChar });
-    const lineResult = Number(`${leftChar}${rightChar}`);
-    result += lineResult;
+    result += left * 10 + +right;
   }
 
   const endTime = process.hrtime(startTime);
@@ -59,6 +86,7 @@ const aoc2025_day3_part1 = async (input: string, ...params: any[]) => {
   return result;
 };
 
+// fined the highest numerical string value that can be created by concatenating 12 digits from the input string, without rearranging the digits
 const aoc2025_day3_part2 = async (input: string, ...params: any[]) => {
   const startTime = process.hrtime();
 
